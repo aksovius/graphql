@@ -1,6 +1,6 @@
 const Project = require('../models/Project');
 const Client = require('../models/Client');
-
+const Todo = require('../models/Todo');
 const {
     GraphQLObjectType,
     GraphQLID,
@@ -10,6 +10,14 @@ const {
     GraphQLNonNull,
     GraphQLEnumType,
   } = require('graphql');
+
+  const TodoType = new GraphQLObjectType({
+    name: 'Todo',
+    fields: () => ({
+      id: { type: GraphQLID },
+      title: { type: GraphQLString },
+    }),
+});
 
 const ClientType = new GraphQLObjectType({
     name: 'Client',
@@ -41,6 +49,12 @@ const ProjectType = new GraphQLObjectType({
 const RootQuery = new GraphQLObjectType({
     name: "RootQueryType",
     fields: {
+        todos: {
+            type: new GraphQLList(TodoType),
+            resolve(parent, args) {
+                return Todo.find()
+            }
+        },
         projects: { 
             type: new GraphQLList(ProjectType),
             resolve(parent, args) {
@@ -74,6 +88,25 @@ const RootQuery = new GraphQLObjectType({
 const mutation = new GraphQLObjectType({
     name: "Mutation",
     fields: {
+        addTodo: {
+            type: TodoType,
+            args: { title: { type: GraphQLString}},
+            resolve(parent, args) {
+                let todo = new Todo({
+                    title: args.title
+                })
+                return todo.save()
+            }
+        }, 
+        deleteTodo: {
+            type: TodoType,
+            args: {
+                id: { type: GraphQLNonNull(GraphQLID) },
+            },
+            resolve(parent, args) {
+                return Todo.findByIdAndRemove(args.id);
+            },
+        },
         // Add a new client
         addClient: {
             type: ClientType,
